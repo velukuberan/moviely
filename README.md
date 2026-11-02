@@ -10,14 +10,25 @@ Moviely is a standalone REST API project designed to provide movie-related resou
 - **FastAPI** — REST API framework
 - **Uvicorn** — ASGI server
 - **uv** — Python dependency and environment management
+- **PostgreSQL 17** — Database service (application integration planned)
+- **Mailpit** — Local email testing (application integration planned)
+- **Docker Compose** — Local infrastructure
 - **pytest** — Automated testing
 - **Ruff** — Linting and formatting
 
-PostgreSQL, Docker, Mailpit and deployment configurations will be introduced in subsequent milestones.
+Remote deployment configuration will be introduced in a subsequent milestone.
 
 ## Requirements
 
+For host-based Python development:
+
 - [uv](https://docs.astral.sh/uv/)
+
+For containerized local development:
+
+- Docker Engine
+- Docker Compose v2
+- GNU Make
 
 Python 3.13 can be installed and managed through `uv`.
 
@@ -46,7 +57,7 @@ This creates a managed `.venv` environment and installs Moviely along with its d
 
 The dependency versions are recorded in `uv.lock` to support reproducible installations.
 
-## Running the Application
+## Running the Application Directly
 
 Start the FastAPI development server:
 
@@ -67,27 +78,59 @@ Once running, the following endpoints are available:
 
 The API root may return `404 Not Found` until a root endpoint is introduced.
 
-### Managing Docker Services
+## Docker — Local Development
 
-Moviely provides a Makefile for managing the local development environment.
+Moviely provides a containerized local environment containing FastAPI, PostgreSQL, and Mailpit.
 
-| Command | Description |
-|---|---|
-| `make up` | Build and start FastAPI, PostgreSQL, and Mailpit |
-| `make down` | Stop and remove containers, preserving volumes |
-| `make restart` | Restart existing services |
-| `make rebuild` | Rebuild and recreate services |
-| `make logs` | Follow container logs |
-| `make status` | Display service status |
-| `make clean` | Remove containers while retaining data |
-| `make destroy` | Remove containers and persistent volumes (requires confirmation) |
-| `make check` | Run tests, linting, formatting checks, and lockfile verification |
+### Configure the environment
 
-Start the environment:
+From the repository root:
+
+```bash
+cp .env.example .env
+chmod 600 .env
+```
+
+Edit `.env` and replace `POSTGRES_PASSWORD=change-me-local` with a local development password before starting the services. Keep `.env` private; it must not be committed to Git. For this initial Compose configuration, use a URL-safe password because it is interpolated into `DATABASE_URL`.
+
+### Start the services
 
 ```bash
 make up
 ```
+
+On first startup, Docker Compose builds the application image if it does not already exist. PostgreSQL data is stored in a persistent Docker volume.
+
+### Available services
+
+| Service | Address |
+|---|---|
+| FastAPI | http://127.0.0.1:8000 |
+| Swagger UI | http://127.0.0.1:8000/docs |
+| Health endpoint | http://127.0.0.1:8000/health |
+| Mailpit web inbox | http://127.0.0.1:8025 |
+| PostgreSQL | Internal Docker network only (`db:5432`) |
+| Mailpit SMTP | Internal Docker network only (`mailpit:1025`) |
+
+The API and Mailpit web UI are bound to the host's loopback interface for local testing. PostgreSQL and SMTP ports are not published to the host.
+
+### Managing Docker services
+
+All Makefile Docker commands target the **local** Compose configuration (`compose.yaml` plus `deploy/local/compose.yaml`).
+
+| Command | Description |
+|---|---|
+| `make help` | List available commands |
+| `make up` | Start services; build missing images if necessary |
+| `make build` | Build images without starting services |
+| `make rebuild` | Rebuild and recreate services |
+| `make down` | Stop and remove containers while preserving volumes |
+| `make restart` | Restart existing containers |
+| `make logs` | Follow container logs (`Ctrl+C` to stop following) |
+| `make status` | Display service status |
+| `make clean` | Same as `make down`; retains volumes |
+| `make destroy` | Remove containers and persistent volumes (requires confirmation) |
+| `make check` | Run tests, linting, formatting checks, and lockfile verification |
 
 Check running services:
 
@@ -95,10 +138,16 @@ Check running services:
 make status
 ```
 
-View logs:
+Follow logs:
 
 ```bash
 make logs
+```
+
+Rebuild the image after changing application source code:
+
+```bash
+make rebuild
 ```
 
 Stop the environment without deleting PostgreSQL data:
@@ -107,28 +156,32 @@ Stop the environment without deleting PostgreSQL data:
 make down
 ```
 
-To completely remove the local environment, including persistent database data:
+To remove the local containers **and their persistent database data**:
 
 ```bash
 make destroy
 ```
 
-**Warning:** `make destroy` permanently removes the project's Docker volumes.
+**Warning:** `make destroy` permanently deletes the project's Docker volumes.
 
-For all available commands, run:
+### Validate the Compose configuration
 
 ```bash
-make help
+docker compose \
+  -f compose.yaml \
+  -f deploy/local/compose.yaml \
+  config --quiet
 ```
 
-### Development Notes
+### Development notes
 
 - The existing `uv run` workflow remains available for running FastAPI directly on the host.
-- The Docker image installs dependencies using the committed `uv.lock` file.
+- The Docker image installs production dependencies using the committed `uv.lock`.
 - Source changes require rebuilding the API image in this initial configuration.
-- PostgreSQL and SMTP configuration are provisioned, but their application integrations will be implemented in subsequent milestones.
+- PostgreSQL and SMTP configuration are provisioned, but application-level database and email integration will be implemented in subsequent milestones.
+- This local Compose configuration is not intended for public deployment.
 
-### Health Check
+## Health Check
 
 Request:
 
@@ -254,6 +307,12 @@ uv run ruff format --check .
 
 # 4. Verify dependency lockfile
 uv lock --check
+```
+
+Or use the Makefile shortcut:
+
+```bash
+make check
 ```
 
 All checks should pass.
