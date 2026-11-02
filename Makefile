@@ -21,7 +21,6 @@ help:
 	@echo "  make destroy        Remove containers and volumes"
 	@echo ""
 	@echo "Development:"
-	@echo "  make test-db        Run PostgreSQL integration tests"
 	@echo "  make test           Run pytest"
 	@echo "  make lint           Check Ruff linting"
 	@echo "  make format         Format Python code"
