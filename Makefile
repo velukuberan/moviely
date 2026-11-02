@@ -11,7 +11,7 @@ help:
 	@echo ""
 	@echo "Docker:"
 	@echo "  make up             Start services"
-	@echo "  make build          Build and start services"
+	@echo "  make build          Build images without starting"
 	@echo "  make rebuild        Rebuild and recreate services"
 	@echo "  make down           Stop and remove containers"
 	@echo "  make restart        Restart running services"
