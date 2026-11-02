@@ -99,13 +99,14 @@ uv run pytest -v
 Run a specific test file:
 
 ```bash
-uv run pytest tests/test_health.py -v
+uv run pytest tests/integration/api/test_health.py -v
 ```
 
 Run a specific test:
 
 ```bash
-uv run pytest tests/test_health.py::test_health_returns_success -v
+uv run pytest \
+  tests/integration/api/test_health.py::test_health_returns_success -v
 ```
 
 ### Linting
