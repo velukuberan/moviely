@@ -10,3 +10,23 @@ services:
       - "127.0.0.1:8025:8025"
     networks:
       - backend
+
+  test:
+    profiles:
+      - test
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: moviely
+      POSTGRES_USER: moviely
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      MOVIELY_TEST_POSTGRES: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend

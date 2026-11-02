@@ -1,10 +1,10 @@
-
 .DEFAULT_GOAL := help
 
 COMPOSE := docker compose -f compose.yaml -f deploy/local/compose.yaml
 
 .PHONY: help up build rebuild down restart logs status clean destroy \
-        test lint format format-check lock-check check
+        test-db test lint format format-check lock-check check compose-check \
+		db-current db-upgrade db-history db-check
 
 help:
 	@echo "Moviely — Development Commands"
@@ -27,6 +27,14 @@ help:
 	@echo "  make format-check   Check formatting"
 	@echo "  make lock-check     Verify uv.lock"
 	@echo "  make check          Run all quality checks"
+	@echo "  make compose-check  Validate Docker Compose configuration"
+	@echo ""
+	@echo "Database:"
+	@echo "  make db-check       Verify PostgreSQL connectivity"
+	@echo "  make db-current     Show and verify current migration"
+	@echo "  make db-upgrade     Apply pending migrations"
+	@echo "  make db-history     Show migration history"
+	@echo "  make test-db        Run PostgreSQL integration tests"
 
 up:
 	$(COMPOSE) up -d
@@ -61,6 +69,10 @@ destroy:
 		echo "Cancelled."; \
 	fi
 
+test-db:
+	$(COMPOSE) run --rm test \
+		pytest tests/integration/db -v
+
 test:
 	uv run pytest -v
 
@@ -78,3 +90,17 @@ lock-check:
 
 check: test lint format-check lock-check
 
+compose-check:
+	$(COMPOSE) --profile test config --quiet
+
+db-current:
+	$(COMPOSE) exec -T api alembic current --check-heads
+
+db-upgrade:
+	$(COMPOSE) exec -T api alembic upgrade head
+
+db-history:
+	$(COMPOSE) exec -T api alembic history --verbose
+
+db-check:
+	$(COMPOSE) exec -T api python -c 'from sqlalchemy import text; from moviely.db.session import get_engine; connection = get_engine().connect(); assert connection.execute(text("SELECT 1")).scalar_one() == 1; connection.close(); print("Database connection OK")'
