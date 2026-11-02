@@ -67,6 +67,67 @@ Once running, the following endpoints are available:
 
 The API root may return `404 Not Found` until a root endpoint is introduced.
 
+### Managing Docker Services
+
+Moviely provides a Makefile for managing the local development environment.
+
+| Command | Description |
+|---|---|
+| `make up` | Build and start FastAPI, PostgreSQL, and Mailpit |
+| `make down` | Stop and remove containers, preserving volumes |
+| `make restart` | Restart existing services |
+| `make rebuild` | Rebuild and recreate services |
+| `make logs` | Follow container logs |
+| `make status` | Display service status |
+| `make clean` | Remove containers while retaining data |
+| `make destroy` | Remove containers and persistent volumes (requires confirmation) |
+| `make check` | Run tests, linting, formatting checks, and lockfile verification |
+
+Start the environment:
+
+```bash
+make up
+```
+
+Check running services:
+
+```bash
+make status
+```
+
+View logs:
+
+```bash
+make logs
+```
+
+Stop the environment without deleting PostgreSQL data:
+
+```bash
+make down
+```
+
+To completely remove the local environment, including persistent database data:
+
+```bash
+make destroy
+```
+
+**Warning:** `make destroy` permanently removes the project's Docker volumes.
+
+For all available commands, run:
+
+```bash
+make help
+```
+
+### Development Notes
+
+- The existing `uv run` workflow remains available for running FastAPI directly on the host.
+- The Docker image installs dependencies using the committed `uv.lock` file.
+- Source changes require rebuilding the API image in this initial configuration.
+- PostgreSQL and SMTP configuration are provisioned, but their application integrations will be implemented in subsequent milestones.
+
 ### Health Check
 
 Request:
