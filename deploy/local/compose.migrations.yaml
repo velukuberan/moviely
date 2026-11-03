@@ -1,0 +1,4 @@
+services:
+  test:
+    volumes:
+      - ./migrations:/app/migrations:rw
