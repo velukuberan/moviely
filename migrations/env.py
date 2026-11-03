@@ -5,6 +5,7 @@ from sqlalchemy import create_engine, pool
 
 from moviely.config import get_database_url
 from moviely.db.base import Base
+from moviely.movies import models as movie_models  # noqa: F401
 
 config = context.config
 

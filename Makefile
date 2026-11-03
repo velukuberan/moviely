@@ -2,9 +2,14 @@
 
 COMPOSE := docker compose -f compose.yaml -f deploy/local/compose.yaml
 
+MIGRATION_COMPOSE := docker compose \
+	-f compose.yaml \
+	-f deploy/local/compose.yaml \
+	-f deploy/local/compose.migrations.yaml
+
 .PHONY: help up build rebuild down restart logs status clean destroy \
         test-db test lint format format-check lock-check check compose-check \
-        db-current db-upgrade db-history db-check db-test-setup
+        db-current db-upgrade db-history db-check db-test-setup db-revision
 
 help:
 	@echo "Moviely — Development Commands"
@@ -36,6 +41,7 @@ help:
 	@echo "  make db-history     Show migration history"
 	@echo "  make test-db        Run PostgreSQL integration tests"
 	@echo "  make db-test-setup  Verify and provision the test database"
+	@echo "  make db-revision MSG='description'  Generate Alembic migration"
 
 up:
 	$(COMPOSE) up -d
@@ -109,3 +115,8 @@ db-check:
 
 db-test-setup:
 	./scripts/provision-test-db.sh
+
+db-revision:
+	@test -n "$(MSG)" || (echo "Usage: make db-revision MSG='migration description'"; exit 1)
+	$(MIGRATION_COMPOSE) run --rm test \
+		alembic revision --autogenerate -m "$(MSG)"
