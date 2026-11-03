@@ -25,6 +25,19 @@ for variable in POSTGRES_PASSWORD POSTGRES_TEST_PASSWORD; do
     fi
 done
 
+# Ensure the shell does not override the test password from .env.
+file_test_password="$(
+    sed -n 's/^POSTGRES_TEST_PASSWORD=//p' "${ENV_FILE}"
+)"
+
+if [[ -v POSTGRES_TEST_PASSWORD ]] &&
+    [[ "${POSTGRES_TEST_PASSWORD}" != "${file_test_password}" ]]; then
+    echo "ERROR: POSTGRES_TEST_PASSWORD differs between the shell and .env" >&2
+    exit 1
+fi
+
+unset file_test_password
+
 # Prevent shell tracing from exposing credentials.
 if [[ "$-" == *x* ]]; then
     echo "ERROR: Do not run provisioning with shell tracing enabled." >&2
