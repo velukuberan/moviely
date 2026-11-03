@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - MOV-007
+      - MOV-008
 
   pull_request:
     branches:
@@ -33,3 +33,55 @@ jobs:
 
       - name: Run quality checks
         run: make check
+
+  integration:
+    name: PostgreSQL Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Generate temporary database credentials
+        shell: bash
+        run: |
+          umask 077
+
+          {
+            printf 'POSTGRES_PASSWORD=%s\n' "$(openssl rand -hex 24)"
+            printf 'POSTGRES_TEST_PASSWORD=%s\n' "$(openssl rand -hex 24)"
+          } > .env
+
+      - name: Validate Docker Compose configuration
+        run: make compose-check
+
+      - name: Start PostgreSQL
+        run: |
+          docker compose \
+            -f compose.yaml \
+            -f deploy/local/compose.yaml \
+            up -d --wait db
+
+      - name: Provision isolated test database
+        run: make db-test-setup
+
+      - name: Apply test database migrations
+        run: |
+          docker compose \
+            -f compose.yaml \
+            -f deploy/local/compose.yaml \
+            run --rm test alembic upgrade head
+
+      - name: Run integration tests
+        run: make test-integration
+
+      - name: Clean up
+        if: always()
+        run: |
+          docker compose \
+            -f compose.yaml \
+            -f deploy/local/compose.yaml \
+            down --volumes --remove-orphans
+
+          rm -f .env
+
