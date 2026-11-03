@@ -8,7 +8,7 @@ MIGRATION_COMPOSE := docker compose \
 	-f deploy/local/compose.migrations.yaml
 
 .PHONY: help up build rebuild down restart logs status clean destroy \
-        test-db test lint format format-check lock-check check compose-check \
+        test-db test-api test-integration test lint format format-check lock-check check compose-check \
         db-current db-upgrade db-history db-check db-test-setup db-revision
 
 help:
@@ -78,8 +78,13 @@ destroy:
 
 
 test-db: db-test-setup
-	$(COMPOSE) run --rm test \
-		pytest tests/integration/db -v
+	$(COMPOSE) run --rm test pytest tests/integration/db -v
+
+test-api: db-test-setup
+	$(COMPOSE) run --rm test pytest tests/integration/api -v
+
+test-integration: db-test-setup
+	$(COMPOSE) run --rm test pytest tests/integration -v
 
 test:
 	uv run pytest -v
