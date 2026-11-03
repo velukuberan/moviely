@@ -4,7 +4,7 @@ COMPOSE := docker compose -f compose.yaml -f deploy/local/compose.yaml
 
 .PHONY: help up build rebuild down restart logs status clean destroy \
         test-db test lint format format-check lock-check check compose-check \
-		db-current db-upgrade db-history db-check
+        db-current db-upgrade db-history db-check db-test-setup
 
 help:
 	@echo "Moviely — Development Commands"
@@ -35,6 +35,7 @@ help:
 	@echo "  make db-upgrade     Apply pending migrations"
 	@echo "  make db-history     Show migration history"
 	@echo "  make test-db        Run PostgreSQL integration tests"
+	@echo "  make db-test-setup  Verify and provision the test database"
 
 up:
 	$(COMPOSE) up -d
@@ -69,7 +70,8 @@ destroy:
 		echo "Cancelled."; \
 	fi
 
-test-db:
+
+test-db: db-test-setup
 	$(COMPOSE) run --rm test \
 		pytest tests/integration/db -v
 
@@ -104,3 +106,6 @@ db-history:
 
 db-check:
 	$(COMPOSE) exec -T api python -c 'from sqlalchemy import text; from moviely.db.session import get_engine; connection = get_engine().connect(); assert connection.execute(text("SELECT 1")).scalar_one() == 1; connection.close(); print("Database connection OK")'
+
+db-test-setup:
+	./scripts/provision-test-db.sh
