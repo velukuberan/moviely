@@ -2,6 +2,12 @@
 
 set -euo pipefail
 
+# Prevent shell tracing from exposing credentials.
+if [[ "$-" == *x* ]]; then
+    echo "ERROR: Do not run provisioning with shell tracing enabled." >&2
+    exit 1
+fi
+
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${PROJECT_ROOT}/.env"
 
@@ -37,12 +43,6 @@ if [[ -v POSTGRES_TEST_PASSWORD ]] &&
 fi
 
 unset file_test_password
-
-# Prevent shell tracing from exposing credentials.
-if [[ "$-" == *x* ]]; then
-    echo "ERROR: Do not run provisioning with shell tracing enabled." >&2
-    exit 1
-fi
 
 echo "Moviely test database configuration: OK"
 
